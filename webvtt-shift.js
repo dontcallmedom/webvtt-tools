@@ -17,14 +17,14 @@ function shift(webvttstring, add) {
 }
 
 function cli() {
-  const timestampRegex = new RegExp("^(([0-9]?[0-9]:)?([0-5]?[0-9]:))?([0-5]?[0-9])(\.[0-9]+)?$");
+  const timestampRegex = new RegExp("^(-)?(([0-9]?[0-9]:)?([0-5]?[0-9]:))?([0-5]?[0-9])(\.[0-9]+)?$");
   const argv = require('yargs')
         .command(['shift <webvtt> <time>', '$0'], 'Shifts the timed text of the WebVTT file by the specified time', yargs => {
           yargs.positional('webvtt', {
             describe: 'WebVTT file',
             type: 'string'
           }).positional('time', {
-            describe: 'Time by which to shift the timed text, formatted as WebVTT timestamp: [[HH:]mm:]ss[.µµµ]',
+            describe: 'Time by which to shift the timed text, formatted as WebVTT timestamp: [-][[HH:]mm:]ss[.µµµ]',
             type: 'string'
           }).demandOption(['webvtt', 'time'])
         })
@@ -39,7 +39,7 @@ function cli() {
           return true;
         })
         .argv;
-  let [,,h ,m ,s , ms] = argv.time.match(timestampRegex).map(s => s ? parseInt(s.replace(/[:\.]/, ''), 10) : s);
+  let [,minus ,,h ,m ,s , ms] = argv.time.match(timestampRegex).map(s => s && s !== '-' ? parseInt(s.replace(/[:\.]/, ''), 10) : s);
   // miliseconds needs to be adjusted to the size of the received number
   if (ms) {
     ms = parseInt(
@@ -49,7 +49,9 @@ function cli() {
       , 10);
   }
   const webvtt = fs.readFileSync(argv.webvtt, 'utf-8');
-  return shift(webvtt, hmsmsToSeconds(h, m, s, ms));
+  const seconds = hmsmsToSeconds(h, m, s, ms);
+  const add = minus ? 0 - seconds : seconds;
+  return shift(webvtt, add);
 }
 
 /**************************************************
