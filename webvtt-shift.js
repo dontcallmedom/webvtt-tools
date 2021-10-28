@@ -8,27 +8,28 @@ function hmsmsToSeconds(h, m, s, ms) {
 function shift(webvttstring, add) {
   const parser = new WebVTTParser();
   const seri = new WebVTTSerializer();
-  const {cues} = parser.parse(fs.readFileSync(process.argv[2], 'utf-8'));
+  const {cues} = parser.parse(webvttstring);
   cues.forEach(c => {
     c.startTime += add;
     c.endTime += add;
   });
-  return seri.serialize(cues);
+  return seri.serialize(cues.filter(c => c.startTime > 0 && c.startTime !== c.endTime && c.tree.children.length));
 }
 
 function cli() {
-  const timestampRegex = new RegExp("^(([0-9]?[0-9]:)?([0-5]?[0-9]:))?([0-5]?[0-9])(\.[0-9]+)?$");
+  const timestampRegex = new RegExp("^([-_])?(([0-9]?[0-9]:)?([0-5]?[0-9]:))?([0-5]?[0-9])(\.[0-9]+)?$");
   const argv = require('yargs')
-        .command(['shift <webvtt> <time>', '$0'], 'Shifts the timed text of the WebVTT file by the specified time', yargs => {
-          yargs.positional('webvtt', {
-            describe: 'WebVTT file',
-            type: 'string'
-          }).positional('time', {
-            describe: 'Time by which to shift the timed text, formatted as WebVTT timestamp: [[HH:]mm:]ss[.µµµ]',
-            type: 'string'
-          }).demandOption(['webvtt', 'time'])
+        .usage(['shift -w <webvtt> -t <time>', '$0'], 'Shifts the timed text of the WebVTT file by the specified time')
+        .options('webvtt', {
+          alias: 'w',
+          describe: 'WebVTT file',
+          type: 'string'
         })
-        .demandCommand(1)
+        .options('time', {
+          alias: 't',
+          describe: 'Time by which to shift the timed text, formatted as WebVTT timestamp: [[-][HH:]mm:]ss[.µµµ]',
+          type: 'string'
+        }).demandOption(['webvtt', 'time'])
         .check(argv => {
           if  (argv.time.match(timestampRegex) === null) {
             throw new Error("Invalid timestamp passed as second parameter");
@@ -39,7 +40,7 @@ function cli() {
           return true;
         })
         .argv;
-  let [,,h ,m ,s , ms] = argv.time.match(timestampRegex).map(s => s ? parseInt(s.replace(/[:\.]/, ''), 10) : s);
+  let [, minus,,h ,m ,s , ms] = argv.time.match(timestampRegex).map((s,i) => s && i > 1 ? parseInt(s.replace(/[:\.]/, ''), 10) : s);
   // miliseconds needs to be adjusted to the size of the received number
   if (ms) {
     ms = parseInt(
@@ -49,7 +50,7 @@ function cli() {
       , 10);
   }
   const webvtt = fs.readFileSync(argv.webvtt, 'utf-8');
-  return shift(webvtt, hmsmsToSeconds(h, m, s, ms));
+  return shift(webvtt, hmsmsToSeconds(h, m, s, ms) * (minus ? -1 : 1));
 }
 
 /**************************************************
