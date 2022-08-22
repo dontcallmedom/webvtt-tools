@@ -18,8 +18,8 @@ function shift(webvttstring, add) {
 
 function cli() {
   const timestampRegex = new RegExp("^([-_])?(([0-9]?[0-9]:)?([0-5]?[0-9]:))?([0-5]?[0-9])(\.[0-9]+)?$");
-  const argv = require('yargs')
-        .usage(['shift -w <webvtt> -t <time>', '$0'], 'Shifts the timed text of the WebVTT file by the specified time')
+  const argv = require('yargs/yargs')(process.argv.slice(2))
+        //.usage(['shift -w <webvtt> -t <time>', '$0'], 'Shifts the timed text of the WebVTT file by the specified time')
         .options('webvtt', {
           alias: 'w',
           describe: 'WebVTT file',

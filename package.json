@@ -4,6 +4,6 @@
   "license": "MIT",
   "dependencies": {
     "webvtt-parser": "^2.0.0",
-    "yargs": "^15.4.0"
+    "yargs": "^17.5.1"
   }
 }
